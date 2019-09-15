@@ -3,12 +3,12 @@
 
 #include <QApplication>
 
-#include "src/text_widget.hh"
+#include "src/window.hh"
 
 int main(int argc, char** argv) {
   QApplication app(argc, argv);
-  TextWidget widget;
-  widget.resize(1600, 1200);
-  widget.show();
+  Window window;
+  window.resize(1600, 1200);
+  window.show();
   app.exec();
 }

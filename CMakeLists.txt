@@ -13,8 +13,10 @@ add_executable(emma
   src/exec.cc
   src/file_descriptor.cc
   src/main.cc
+  src/pane.cc
   src/shell.cc
-  src/text_widget.cc)
+  src/text_widget.cc
+  src/window.cc)
 
 set_target_properties(emma PROPERTIES AUTOMOC ON AUTOUIC ON)
 
