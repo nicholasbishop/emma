@@ -23,7 +23,7 @@ class FileDescriptor {
 
   void dup(int newfd);
 
-  void readAll(QByteArray* array) ;
+  void readAll(QByteArray* array);
 
   void writeAll(const QByteArray& array);
 

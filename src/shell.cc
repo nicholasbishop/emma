@@ -1,7 +1,7 @@
 #include "src/shell.hh"
 
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 #include <stdexcept>
 
 #include <errno.h>
@@ -38,10 +38,10 @@ void ShellLauncher::Launch(const Exec& exec) {
     // Parent
     fds.reset();
 
-    notifier_ = std::make_unique<QSocketNotifier>(pty_.value(),
-                                                  QSocketNotifier::Read);
-    connect(notifier_.get(), &QSocketNotifier::activated,
-            this, &ShellLauncher::outputReady);
+    notifier_ =
+        std::make_unique<QSocketNotifier>(pty_.value(), QSocketNotifier::Read);
+    connect(notifier_.get(), &QSocketNotifier::activated, this,
+            &ShellLauncher::outputReady);
     notifier_->setEnabled(true);
   } else {
     // Child

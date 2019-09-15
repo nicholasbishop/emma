@@ -31,9 +31,13 @@ void FileDescriptor::reset() {
   }
 }
 
-bool FileDescriptor::isValid() const { return fd_ >= 0; }
+bool FileDescriptor::isValid() const {
+  return fd_ >= 0;
+}
 
-int FileDescriptor::value() const { return fd_; };
+int FileDescriptor::value() const {
+  return fd_;
+};
 
 void FileDescriptor::dup(int newfd) {
   if (dup2(fd_, newfd) == -1) {

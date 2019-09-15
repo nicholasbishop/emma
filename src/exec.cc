@@ -7,7 +7,8 @@
 
 #include <unistd.h>
 
-Exec::Exec(const std::string& path, const std::vector<std::string>& args) : path_(path), args_(args) {}
+Exec::Exec(const std::string& path, const std::vector<std::string>& args)
+    : path_(path), args_(args) {}
 
 static char* copy_string(const std::string& str) {
   char* copy = new char[str.size() + 1];

@@ -28,17 +28,15 @@ class TextWidget : public QWidget {
     connect(&shell_launcher_, &ShellLauncher::outputReady, this,
             &TextWidget::readyReadStdout);
     // connect(process_.get(),
-    //         QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-    //         &TextWidget::processFinished);
+    //         QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+    //         this, &TextWidget::processFinished);
 
     // process_->setProgram("/bin/bash");
     // process_->setArguments({"-i"});
     // process_->start();
   }
 
-  void sendInput() {
-    shell_launcher_.pty()->writeAll("echo hello\n");
-  }
+  void sendInput() { shell_launcher_.pty()->writeAll("echo hello\n"); }
 
   // void processFinished(int exitCode, QProcess::ExitStatus) {
   //   std::cerr << "proc finished: " << exitCode;
