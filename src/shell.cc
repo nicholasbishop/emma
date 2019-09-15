@@ -50,15 +50,15 @@ void ShellLauncher::Launch(const Exec& exec) {
     // Child
     pty_.reset();
 
-    termios slave_orig_term_settings; // Saved terminal settings
-    termios new_term_settings; // Current terminal settings
+    termios slave_orig_term_settings;  // Saved terminal settings
+    termios new_term_settings;         // Current terminal settings
     // Save the defaults parameters of the slave side of the PTY
     int rc = tcgetattr(fds.value(), &slave_orig_term_settings);
     // Set RAW mode on slave side of PTY
     new_term_settings = slave_orig_term_settings;
-    //new_term_settings.c_cflag &= ~ECHO;
-    //cfmakeraw (&new_term_settings);
-    tcsetattr (fds.value(), TCSANOW, &new_term_settings);
+    // new_term_settings.c_cflag &= ~ECHO;
+    // cfmakeraw (&new_term_settings);
+    tcsetattr(fds.value(), TCSANOW, &new_term_settings);
 
     fds.dup(0);
     fds.dup(1);
