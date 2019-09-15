@@ -26,13 +26,6 @@ void TextWidget::startShell() {
   shell_launcher_.Launch(Exec("/bin/bash", {"-i"}));
   connect(&shell_launcher_, &ShellLauncher::outputReady, this,
           &TextWidget::shellReadReady);
-  // connect(process_.get(),
-  //         QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-  //         this, &TextWidget::processFinished);
-
-  // process_->setProgram("/bin/bash");
-  // process_->setArguments({"-i"});
-  // process_->start();
 }
 
 void TextWidget::runCommand() {
@@ -55,32 +48,14 @@ void TextWidget::runCommand() {
 
   shell_cursor_.movePosition(QTextCursor::End);
 
-  printf("sending text: '%s'\n", text.toStdString().c_str());
   shell_launcher_.pty()->writeAll(text.toUtf8());
 }
-
-// void TextWidget::sendInput() { shell_launcher_.pty()->writeAll("echo hello\n"); }
-
-// void processFinished(int exitCode, QProcess::ExitStatus) {
-//   std::cerr << "proc finished: " << exitCode;
-// }
 
 void TextWidget::shellReadReady() {
   QByteArray array;
   shell_launcher_.pty()->readAll(&array);
 
   QString text = array;
-  QString crlf;
-  crlf += QChar(13);
-  crlf += QChar(10);
-  text.replace(crlf, "\n");
-  //text.replace(QChar(13), '2');
-  for (const QChar c : text) {
-    //text = text.replace('\n', "_");
-    printf("%s (%d)\n", QString(c).toUtf8().toStdString().c_str(), c.unicode());
-  }
-
-  //printf("inserting text: '%s'\n", text.toStdString().c_str());
 
   appendShellOutput(text);
 }
