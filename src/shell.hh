@@ -17,6 +17,8 @@ class ShellLauncher : public QObject {
  public:
   void Launch(const Exec& exec);
 
+  bool isRunning() const { return is_running_; }
+
   FileDescriptor* pty() { return &pty_; }
 
  signals:
@@ -25,6 +27,7 @@ class ShellLauncher : public QObject {
  private:
   std::unique_ptr<QSocketNotifier> notifier_;
   FileDescriptor pty_;
+  bool is_running_{false};
 };
 
 #endif  // SRC_SHELL_HH_
