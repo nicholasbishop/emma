@@ -8,6 +8,18 @@
 
 class Pane;
 
+class Column : public QWidget {
+ public:
+  Column();
+
+  Pane* firstPane();
+
+  Pane* getNextPane(Pane* pane);
+
+ private:
+  QVBoxLayout layout_;
+};
+
 class Window : public QWidget {
  public:
   Window();
@@ -16,11 +28,16 @@ class Window : public QWidget {
   void keyPressEvent(QKeyEvent* event) final;
 
  private:
-  void splitVertical();
-  void splitHorizontal();
+  Column* activeColumn();
+  Column* getNextColumnWithWraparound(Column* column);
+
+  void addColumn();
+  void addRow();
+  void activateNextPane();
+  void setActivePane(Pane* pane);
 
   Pane* active_pane_ = nullptr;
-  QBoxLayout layout_{QBoxLayout::LeftToRight};
+  QHBoxLayout layout_;
 };
 
 #endif  // SRC_WINDOW_HH_

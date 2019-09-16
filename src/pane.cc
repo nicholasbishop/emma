@@ -6,4 +6,6 @@ Pane::Pane() {
   layout_.addWidget(&text_widget_);
   layout_.addWidget(&footer_);
   setLayout(&layout_);
+
+  setFocusProxy(&text_widget_);
 }
