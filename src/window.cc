@@ -33,9 +33,11 @@ Window::Window() {
 void Window::keyPressEvent(QKeyEvent* event) {
   if (event->key() == Qt::Key_1 && event->modifiers() == Qt::ControlModifier) {
     addColumn();
-  } else if (event->key() == Qt::Key_2 && event->modifiers() == Qt::ControlModifier) {
+  } else if (event->key() == Qt::Key_2 &&
+             event->modifiers() == Qt::ControlModifier) {
     addRow();
-  } else if (event->key() == Qt::Key_Tab && event->modifiers() == Qt::ControlModifier) {
+  } else if (event->key() == Qt::Key_Tab &&
+             event->modifiers() == Qt::ControlModifier) {
     activateNextPane();
   } else {
     QWidget::keyPressEvent(event);
