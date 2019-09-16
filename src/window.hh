@@ -6,11 +6,20 @@
 #include <QBoxLayout>
 #include <QWidget>
 
+class Pane;
+
 class Window : public QWidget {
  public:
   Window();
 
+ protected:
+  void keyPressEvent(QKeyEvent* event) final;
+
  private:
+  void splitVertical();
+  void splitHorizontal();
+
+  Pane* active_pane_ = nullptr;
   QBoxLayout layout_{QBoxLayout::LeftToRight};
 };
 
