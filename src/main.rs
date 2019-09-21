@@ -123,8 +123,7 @@ impl Window {
 }
 
 fn main() {
-    let app = gtk::Application::new(
-        Some("org.gtkrsnotes.demo"),
+    let app = gtk::Application::new(Some("me.nicholasbishop.emma"),
         gio::ApplicationFlags::FLAGS_NONE,
     )
     .expect("Application::new failed");
