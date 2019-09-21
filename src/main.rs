@@ -97,10 +97,14 @@ impl Window {
     }
 
     fn on_key_press(&mut self, key: &gdk::EventKey) -> Inhibit {
-        if key.get_keyval() == '3' as u32 && key.get_state() == gdk::ModifierType::CONTROL_MASK {
+        if key.get_keyval() == '3' as u32
+            && key.get_state() == gdk::ModifierType::CONTROL_MASK
+        {
             self.add_column();
             Inhibit(true)
-        } else if key.get_keyval() == '4' as u32 && key.get_state() == gdk::ModifierType::CONTROL_MASK {
+        } else if key.get_keyval() == '4' as u32
+            && key.get_state() == gdk::ModifierType::CONTROL_MASK
+        {
             // TODO
             self.columns[0].add_row();
             Inhibit(true)
@@ -123,7 +127,8 @@ impl Window {
 }
 
 fn main() {
-    let app = gtk::Application::new(Some("me.nicholasbishop.emma"),
+    let app = gtk::Application::new(
+        Some("me.nicholasbishop.emma"),
         gio::ApplicationFlags::FLAGS_NONE,
     )
     .expect("Application::new failed");
