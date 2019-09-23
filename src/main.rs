@@ -1,8 +1,7 @@
 use gio::prelude::*;
 use gtk::prelude::*;
 
-use std::env;
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, env, rc::Rc};
 
 struct Pane {
     layout: gtk::Box,
@@ -15,6 +14,8 @@ impl Pane {
         let label = gtk::Label::new(None);
         gtk::WidgetExt::set_name(&label, "footer");
         let editor = gtk::TextView::new();
+        editor.set_monospace(true);
+
         let spacing = 0;
         let layout = gtk::Box::new(gtk::Orientation::Vertical, spacing);
         let spacing = 0;
@@ -97,6 +98,7 @@ impl Window {
         );
 
         let command = gtk::TextView::new();
+        command.set_monospace(true);
 
         let expand = true;
         let fill = true;
@@ -140,6 +142,11 @@ impl Window {
             // TODO
             self.columns[0].add_row();
             Inhibit(true)
+        } else if key.get_keyval() == 'o' as u32
+            && key.get_state() == gdk::ModifierType::CONTROL_MASK
+        {
+            self.find_file();
+            Inhibit(true)
         } else {
             Inhibit(false)
         }
@@ -155,6 +162,22 @@ impl Window {
         );
         column.layout.show_all();
         self.columns.push(column);
+    }
+
+    fn find_file(&mut self) {
+        self.command.grab_focus();
+        let buffer = self.command.get_buffer().unwrap();
+        buffer.set_text("Find file: ");
+        let prompt_tag = gtk::TextTag::new(Some("prompt"));
+        prompt_tag.set_property_editable(false);
+        prompt_tag.set_property_foreground_rgba(Some(&gdk::RGBA {
+            red: 0.929,
+            green: 0.831,
+            blue: 0.012,
+            alpha: 1.0,
+        }));
+        buffer.get_tag_table().unwrap().add(&prompt_tag);
+        buffer.apply_tag(&prompt_tag, &buffer.get_start_iter(), &buffer.get_end_iter());
     }
 }
 
