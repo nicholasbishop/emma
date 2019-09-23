@@ -1,6 +1,14 @@
-use gio::prelude::*;
-use gtk::prelude::*;
+mod command;
 
+use gio::ApplicationExt;
+use gio::ApplicationExtManual;
+use gtk::BoxExt;
+use gtk::ContainerExt;
+use gtk::CssProviderExt;
+use gtk::GtkWindowExt;
+use gtk::Inhibit;
+use gtk::TextViewExt;
+use gtk::WidgetExt;
 use std::{cell::RefCell, env, rc::Rc};
 
 struct Pane {
@@ -74,7 +82,7 @@ struct Window {
     layout: gtk::Box,
     column_layout: gtk::Box,
     columns: Vec<Column>,
-    command: gtk::TextView,
+    command: Rc<RefCell<command::Command>>,
 }
 
 impl Window {
@@ -97,15 +105,14 @@ impl Window {
             /*spacing=*/ 0,
         );
 
-        let command = gtk::TextView::new();
-        command.set_monospace(true);
+        let command = command::Command::new();
 
         let expand = true;
         let fill = true;
         let spacing = 0;
         vbox.pack_start(&hbox, expand, fill, spacing);
         let expand = false;
-        vbox.pack_start(&command, expand, fill, spacing);
+        vbox.pack_start(command.borrow().widget(), expand, fill, spacing);
         window.add(&vbox);
 
         let r = Rc::new(RefCell::new(Window {
@@ -116,12 +123,10 @@ impl Window {
             command,
         }));
 
-        let copy = r.clone();
-        r.borrow_mut()
-            .window
-            .connect_key_press_event(move |_, key| {
-                copy.borrow_mut().on_key_press(key)
-            });
+        let r2 = r.clone();
+        r.borrow().window.connect_key_press_event(move |_, key| {
+            Self::on_key_press(r2.clone(), key)
+        });
 
         r
     }
@@ -130,22 +135,22 @@ impl Window {
         self.window.show_all();
     }
 
-    fn on_key_press(&mut self, key: &gdk::EventKey) -> Inhibit {
+    fn on_key_press(w: Rc<RefCell<Window>>, key: &gdk::EventKey) -> Inhibit {
         if key.get_keyval() == '3' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            self.add_column();
+            w.borrow_mut().add_column();
             Inhibit(true)
         } else if key.get_keyval() == '4' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
             // TODO
-            self.columns[0].add_row();
+            w.borrow_mut().columns[0].add_row();
             Inhibit(true)
         } else if key.get_keyval() == 'o' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            self.find_file();
+            command::Command::find_file(w.borrow().command.clone());
             Inhibit(true)
         } else {
             Inhibit(false)
@@ -162,26 +167,6 @@ impl Window {
         );
         column.layout.show_all();
         self.columns.push(column);
-    }
-
-    fn find_file(&mut self) {
-        self.command.grab_focus();
-        let buffer = self.command.get_buffer().unwrap();
-        buffer.set_text("Find file: ");
-        let prompt_tag = gtk::TextTag::new(None);
-        prompt_tag.set_property_editable(false);
-        prompt_tag.set_property_foreground_rgba(Some(&gdk::RGBA {
-            red: 0.929,
-            green: 0.831,
-            blue: 0.012,
-            alpha: 1.0,
-        }));
-        buffer.get_tag_table().unwrap().add(&prompt_tag);
-        buffer.apply_tag(
-            &prompt_tag,
-            &buffer.get_start_iter(),
-            &buffer.get_end_iter(),
-        );
     }
 }
 
