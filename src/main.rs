@@ -177,7 +177,11 @@ impl Window {
             alpha: 1.0,
         }));
         buffer.get_tag_table().unwrap().add(&prompt_tag);
-        buffer.apply_tag(&prompt_tag, &buffer.get_start_iter(), &buffer.get_end_iter());
+        buffer.apply_tag(
+            &prompt_tag,
+            &buffer.get_start_iter(),
+            &buffer.get_end_iter(),
+        );
     }
 }
 
