@@ -13,9 +13,11 @@ struct Pane {
 impl Pane {
     fn new() -> Pane {
         let label = gtk::Label::new(None);
+        gtk::WidgetExt::set_name(&label, "footer");
         let editor = gtk::TextView::new();
         let spacing = 0;
         let layout = gtk::Box::new(gtk::Orientation::Vertical, spacing);
+        let spacing = 0;
         let expand = true;
         let fill = true;
         layout.pack_start(&editor, expand, fill, spacing);
@@ -147,6 +149,13 @@ fn main() {
     )
     .expect("Application::new failed");
     app.connect_activate(|app| {
+        let css = gtk::CssProvider::new();
+        css.load_from_data(include_bytes!("theme.css")).unwrap();
+        
+        gtk::StyleContext::add_provider_for_screen(&gdk::Screen::get_default().unwrap(),
+                                                  &css,
+                                                  gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
+
         let window = Window::new(app);
 
         window.borrow().show();
