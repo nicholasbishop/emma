@@ -1,3 +1,4 @@
+use gtk::Inhibit;
 use gtk::TextBufferExt;
 use gtk::TextTagExt;
 use gtk::TextTagTableExt;
@@ -28,6 +29,10 @@ impl Command {
             .connect_changed(move |_| {
                 Self::on_command_changed(r2.clone());
             });
+        let r2 = r.clone();
+        r.borrow().editor.connect_key_press_event(move |_, key| {
+            Self::on_key_press(r2.clone(), key)
+        });
         r
     }
 
@@ -76,7 +81,14 @@ impl Command {
         Some(PathBuf::from(path.as_str()))
     }
 
-    fn on_command_changed(c: Rc<RefCell<Command>>) {
-        dbg!(c.borrow().get_current_path());
+    fn on_key_press(c: Rc<RefCell<Command>>, key: &gdk::EventKey) -> Inhibit {
+        if key.get_keyval() == gdk::enums::key::Return {
+            dbg!(c.borrow().get_current_path());
+            Inhibit(true)
+        } else {
+            Inhibit(false)
+        }
     }
+
+    fn on_command_changed(c: Rc<RefCell<Command>>) {}
 }
