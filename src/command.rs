@@ -75,6 +75,11 @@ impl Command {
         );
     }
 
+    fn clear(&self) {
+        let buffer = self.editor.get_buffer().unwrap();
+        buffer.set_text("");
+    }
+
     fn get_current_path(&self) -> Option<PathBuf> {
         let buffer = self.editor.get_buffer()?;
         let start = buffer.get_iter_at_mark(&buffer.get_mark("path-start")?);
@@ -88,6 +93,7 @@ impl Command {
         if key.get_keyval() == gdk::enums::key::Return {
             let path = c.borrow().get_current_path().unwrap();
             c.borrow().window.as_ref().unwrap().borrow().open_file(&path);
+            c.borrow().clear();
             Inhibit(true)
         } else {
             Inhibit(false)
