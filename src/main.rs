@@ -5,13 +5,27 @@ use std::env;
 use std::{cell::RefCell, rc::Rc};
 
 struct Pane {
+    layout: gtk::Box,
     editor: gtk::TextView,
+    label: gtk::Label,
 }
 
 impl Pane {
     fn new() -> Pane {
+        let label = gtk::Label::new(None);
+        let editor = gtk::TextView::new();
+        let spacing = 0;
+        let layout = gtk::Box::new(gtk::Orientation::Vertical, spacing);
+        let expand = true;
+        let fill = true;
+        layout.pack_start(&editor, expand, fill, spacing);
+        let expand = false;
+        let fill = false;
+        layout.pack_start(&label, expand, fill, spacing);
         Pane {
-            editor: gtk::TextView::new(),
+            layout,
+            editor,
+            label,
         }
     }
 }
@@ -28,7 +42,7 @@ impl Column {
             gtk::Box::new(gtk::Orientation::Vertical, /*spacing=*/ 1);
         vbox.set_homogeneous(true);
         vbox.pack_start(
-            &pane.editor,
+            &pane.layout,
             /*expand=*/ true,
             /*fill=*/ true,
             /*spacing=*/ 0,
@@ -42,7 +56,7 @@ impl Column {
     fn add_row(&mut self) {
         let pane = Pane::new();
         self.layout.pack_start(
-            &pane.editor,
+            &pane.layout,
             /*expand=*/ true,
             /*fill=*/ true,
             /*spacing=*/ 0,
