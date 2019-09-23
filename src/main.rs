@@ -151,10 +151,12 @@ fn main() {
     app.connect_activate(|app| {
         let css = gtk::CssProvider::new();
         css.load_from_data(include_bytes!("theme.css")).unwrap();
-        
-        gtk::StyleContext::add_provider_for_screen(&gdk::Screen::get_default().unwrap(),
-                                                  &css,
-                                                  gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+        gtk::StyleContext::add_provider_for_screen(
+            &gdk::Screen::get_default().unwrap(),
+            &css,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
 
         let window = Window::new(app);
 
