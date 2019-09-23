@@ -7,12 +7,14 @@ use gtk::ContainerExt;
 use gtk::CssProviderExt;
 use gtk::GtkWindowExt;
 use gtk::Inhibit;
+use gtk::TextBufferExt;
 use gtk::TextViewExt;
 use gtk::WidgetExt;
-use std::{cell::RefCell, env, rc::Rc};
+use std::{cell::RefCell, env, fs, path::Path, rc::Rc};
 
 struct Pane {
     layout: gtk::Box,
+    scroller: gtk::ScrolledWindow,
     editor: gtk::TextView,
     label: gtk::Label,
 }
@@ -24,12 +26,16 @@ impl Pane {
         let editor = gtk::TextView::new();
         editor.set_monospace(true);
 
+        let scroller = gtk::ScrolledWindow::new(None::<&gtk::Adjustment>,
+                                                None::<&gtk::Adjustment>);
+        scroller.add(&editor);
+
         let spacing = 0;
         let layout = gtk::Box::new(gtk::Orientation::Vertical, spacing);
         let spacing = 0;
         let expand = true;
         let fill = true;
-        layout.pack_start(&editor, expand, fill, spacing);
+        layout.pack_start(&scroller, expand, fill, spacing);
         let expand = false;
         let fill = false;
         layout.pack_start(&label, expand, fill, spacing);
@@ -37,7 +43,16 @@ impl Pane {
             layout,
             editor,
             label,
+            scroller,
         }
+    }
+
+    fn open_file(&self, path: &Path) {
+        let file = fs::read_to_string(path).unwrap();
+        let tags: Option<&gtk::TextTagTable> = None;
+        let buffer = gtk::TextBuffer::new(tags);
+        buffer.set_text(&file);
+        self.editor.set_buffer(Some(&buffer));
     }
 }
 
@@ -77,12 +92,13 @@ impl Column {
     }
 }
 
-struct Window {
+pub struct Window {
     window: gtk::ApplicationWindow,
     layout: gtk::Box,
     column_layout: gtk::Box,
     columns: Vec<Column>,
     command: Rc<RefCell<command::Command>>,
+    active_pane_index: (usize, usize),
 }
 
 impl Window {
@@ -121,6 +137,7 @@ impl Window {
             column_layout: hbox,
             columns: vec![column],
             command,
+            active_pane_index: (0, 0),
         }));
 
         let r2 = r.clone();
@@ -150,7 +167,7 @@ impl Window {
         } else if key.get_keyval() == 'o' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            command::Command::find_file(w.borrow().command.clone());
+            command::Command::find_file(w.clone(), w.borrow().command.clone());
             Inhibit(true)
         } else {
             Inhibit(false)
@@ -167,6 +184,14 @@ impl Window {
         );
         column.layout.show_all();
         self.columns.push(column);
+    }
+
+    fn get_active_pane(&self) -> &Pane {
+        &self.columns[self.active_pane_index.0].panes[self.active_pane_index.1]
+    }
+
+    pub fn open_file(&self, path: &Path) {
+        self.get_active_pane().open_file(path);
     }
 }
 

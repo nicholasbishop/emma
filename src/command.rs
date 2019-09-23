@@ -1,3 +1,4 @@
+use crate::Window;
 use gtk::Inhibit;
 use gtk::TextBufferExt;
 use gtk::TextTagExt;
@@ -12,6 +13,7 @@ use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
 pub struct Command {
     editor: gtk::TextView,
+    window: Option<Rc<RefCell<Window>>>,
 }
 
 impl Command {
@@ -19,7 +21,7 @@ impl Command {
         let editor = gtk::TextView::new();
         editor.set_monospace(true);
 
-        let r = Rc::new(RefCell::new(Command { editor }));
+        let r = Rc::new(RefCell::new(Command { editor, window: None }));
 
         let r2 = r.clone();
         r.borrow()
@@ -40,7 +42,8 @@ impl Command {
         &self.editor
     }
 
-    pub fn find_file(c: Rc<RefCell<Command>>) {
+    pub fn find_file(w: Rc<RefCell<Window>>, c: Rc<RefCell<Command>>) {
+        c.borrow_mut().window = Some(w);
         c.borrow().editor.grab_focus();
         let buffer = c.borrow().editor.get_buffer().unwrap();
         buffer.set_text("Find file: ");
@@ -83,7 +86,8 @@ impl Command {
 
     fn on_key_press(c: Rc<RefCell<Command>>, key: &gdk::EventKey) -> Inhibit {
         if key.get_keyval() == gdk::enums::key::Return {
-            dbg!(c.borrow().get_current_path());
+            let path = c.borrow().get_current_path().unwrap();
+            c.borrow().window.as_ref().unwrap().borrow().open_file(&path);
             Inhibit(true)
         } else {
             Inhibit(false)
