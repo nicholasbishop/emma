@@ -168,7 +168,7 @@ impl Window {
         self.command.grab_focus();
         let buffer = self.command.get_buffer().unwrap();
         buffer.set_text("Find file: ");
-        let prompt_tag = gtk::TextTag::new(Some("prompt"));
+        let prompt_tag = gtk::TextTag::new(None);
         prompt_tag.set_property_editable(false);
         prompt_tag.set_property_foreground_rgba(Some(&gdk::RGBA {
             red: 0.929,
