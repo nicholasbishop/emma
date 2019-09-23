@@ -71,7 +71,9 @@ impl Column {
 struct Window {
     window: gtk::ApplicationWindow,
     layout: gtk::Box,
+    column_layout: gtk::Box,
     columns: Vec<Column>,
+    command: gtk::TextView,
 }
 
 impl Window {
@@ -79,6 +81,9 @@ impl Window {
         let window = gtk::ApplicationWindow::new(app);
         window.set_default_size(1024, 768);
         window.set_title("emma");
+
+        let vbox =
+            gtk::Box::new(gtk::Orientation::Vertical, /*spacing=*/ 0);
 
         let column = Column::new();
         let hbox =
@@ -90,12 +95,23 @@ impl Window {
             /*fill=*/ true,
             /*spacing=*/ 0,
         );
-        window.add(&hbox);
+
+        let command = gtk::TextView::new();
+
+        let expand = true;
+        let fill = true;
+        let spacing = 0;
+        vbox.pack_start(&hbox, expand, fill, spacing);
+        let expand = false;
+        vbox.pack_start(&command, expand, fill, spacing);
+        window.add(&vbox);
 
         let r = Rc::new(RefCell::new(Window {
             window,
-            layout: hbox,
+            layout: vbox,
+            column_layout: hbox,
             columns: vec![column],
+            command,
         }));
 
         let copy = r.clone();
@@ -131,7 +147,7 @@ impl Window {
 
     fn add_column(&mut self) {
         let column = Column::new();
-        self.layout.pack_start(
+        self.column_layout.pack_start(
             &column.layout,
             /*expand=*/ true,
             /*fill=*/ true,
