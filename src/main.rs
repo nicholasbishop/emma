@@ -1,4 +1,6 @@
+mod buffer;
 mod command;
+mod persistence;
 
 use gio::ApplicationExt;
 use gio::ApplicationExtManual;
@@ -7,10 +9,9 @@ use gtk::ContainerExt;
 use gtk::CssProviderExt;
 use gtk::GtkWindowExt;
 use gtk::Inhibit;
-use gtk::TextBufferExt;
 use gtk::TextViewExt;
 use gtk::WidgetExt;
-use std::{cell::RefCell, env, fs, path::Path, rc::Rc};
+use std::{cell::RefCell, env, path::Path, rc::Rc};
 
 struct Pane {
     layout: gtk::Box,
@@ -26,8 +27,10 @@ impl Pane {
         let editor = gtk::TextView::new();
         editor.set_monospace(true);
 
-        let scroller = gtk::ScrolledWindow::new(None::<&gtk::Adjustment>,
-                                                None::<&gtk::Adjustment>);
+        let scroller = gtk::ScrolledWindow::new(
+            None::<&gtk::Adjustment>,
+            None::<&gtk::Adjustment>,
+        );
         scroller.add(&editor);
 
         let spacing = 0;
@@ -45,14 +48,6 @@ impl Pane {
             label,
             scroller,
         }
-    }
-
-    fn open_file(&self, path: &Path) {
-        let file = fs::read_to_string(path).unwrap();
-        let tags: Option<&gtk::TextTagTable> = None;
-        let buffer = gtk::TextBuffer::new(tags);
-        buffer.set_text(&file);
-        self.editor.set_buffer(Some(&buffer));
     }
 }
 
@@ -99,10 +94,11 @@ pub struct Window {
     columns: Vec<Column>,
     command: Rc<RefCell<command::Command>>,
     active_pane_index: (usize, usize),
+    buffers: Rc<RefCell<buffer::BufferMap>>,
 }
 
 impl Window {
-    fn new(app: &gtk::Application) -> Rc<RefCell<Window>> {
+    fn new(app: &gtk::Application, buffers: Rc<RefCell<buffer::BufferMap>>) -> Rc<RefCell<Window>> {
         let window = gtk::ApplicationWindow::new(app);
         window.set_default_size(1024, 768);
         window.set_title("emma");
@@ -138,6 +134,7 @@ impl Window {
             columns: vec![column],
             command,
             active_pane_index: (0, 0),
+            buffers,
         }));
 
         let r2 = r.clone();
@@ -163,6 +160,11 @@ impl Window {
         {
             // TODO
             w.borrow_mut().columns[0].add_row();
+            Inhibit(true)
+        } else if key.get_keyval() == 'b' as u32
+            && key.get_state() == gdk::ModifierType::CONTROL_MASK
+        {
+            command::Command::choose_buffer(w.clone(), w.borrow().command.clone());
             Inhibit(true)
         } else if key.get_keyval() == 'o' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
@@ -191,17 +193,28 @@ impl Window {
     }
 
     pub fn open_file(&self, path: &Path) {
-        self.get_active_pane().open_file(path);
+        let buf = buffer::Buffer::open_file(path);
+        persistence::add_buffer(&buf).unwrap();
+        let id = buf.id.clone();
+        self.buffers.borrow_mut().insert(id.clone(), buf);
+        if let Some(buf) = self.buffers.borrow().get(&id) {
+            if let Some(text) = &buf.text {
+                self.get_active_pane().editor.set_buffer(Some(text));
+            }
+        }
     }
 }
 
 fn main() {
+    persistence::init_db().unwrap();
     let app = gtk::Application::new(
         Some("me.nicholasbishop.emma"),
         gio::ApplicationFlags::FLAGS_NONE,
     )
     .expect("Application::new failed");
     app.connect_activate(|app| {
+        let buffers = Rc::new(RefCell::new(buffer::BufferMap::new()));
+
         let css = gtk::CssProvider::new();
         css.load_from_data(include_bytes!("theme.css")).unwrap();
 
@@ -211,7 +224,11 @@ fn main() {
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
 
-        let window = Window::new(app);
+        let window = Window::new(app, buffers.clone());
+
+        if let Ok(b) = persistence::load_buffer_list() {
+            buffers.replace(b);
+        }
 
         window.borrow().show();
     });

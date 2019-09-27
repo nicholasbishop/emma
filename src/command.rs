@@ -21,7 +21,10 @@ impl Command {
         let editor = gtk::TextView::new();
         editor.set_monospace(true);
 
-        let r = Rc::new(RefCell::new(Command { editor, window: None }));
+        let r = Rc::new(RefCell::new(Command {
+            editor,
+            window: None,
+        }));
 
         let r2 = r.clone();
         r.borrow()
@@ -42,11 +45,9 @@ impl Command {
         &self.editor
     }
 
-    pub fn find_file(w: Rc<RefCell<Window>>, c: Rc<RefCell<Command>>) {
-        c.borrow_mut().window = Some(w);
-        c.borrow().editor.grab_focus();
-        let buffer = c.borrow().editor.get_buffer().unwrap();
-        buffer.set_text("Find file: ");
+    fn set_prompt(&self, prompt: &str) {
+        let buffer = self.editor.get_buffer().unwrap();
+        buffer.set_text(prompt);
         let prompt_tag = gtk::TextTag::new(None);
         prompt_tag.set_property_editable(false);
         prompt_tag.set_property_foreground_rgba(Some(&gdk::RGBA {
@@ -61,6 +62,13 @@ impl Command {
             &buffer.get_start_iter(),
             &buffer.get_end_iter(),
         );
+    }
+
+    pub fn find_file(w: Rc<RefCell<Window>>, c: Rc<RefCell<Command>>) {
+        c.borrow_mut().window = Some(w);
+        c.borrow().editor.grab_focus();
+        c.borrow().set_prompt("Find file: ");
+        let buffer = c.borrow().editor.get_buffer().unwrap();
         let left_gravity = true;
         buffer.create_mark(
             Some("path-start"),
@@ -73,6 +81,12 @@ impl Command {
             &buffer.get_end_iter(),
             left_gravity,
         );
+    }
+
+    pub fn choose_buffer(w: Rc<RefCell<Window>>, c: Rc<RefCell<Command>>) {
+        c.borrow_mut().window = Some(w);
+        c.borrow().editor.grab_focus();
+        c.borrow().set_prompt("Choose buffer: ");
     }
 
     fn clear(&self) {
@@ -92,7 +106,12 @@ impl Command {
     fn on_key_press(c: Rc<RefCell<Command>>, key: &gdk::EventKey) -> Inhibit {
         if key.get_keyval() == gdk::enums::key::Return {
             let path = c.borrow().get_current_path().unwrap();
-            c.borrow().window.as_ref().unwrap().borrow().open_file(&path);
+            c.borrow()
+                .window
+                .as_ref()
+                .unwrap()
+                .borrow()
+                .open_file(&path);
             c.borrow().clear();
             Inhibit(true)
         } else {
@@ -100,5 +119,5 @@ impl Command {
         }
     }
 
-    fn on_command_changed(c: Rc<RefCell<Command>>) {}
+    fn on_command_changed(_c: Rc<RefCell<Command>>) {}
 }
