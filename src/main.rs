@@ -2,6 +2,7 @@ mod buffer;
 mod command;
 mod persistence;
 
+use command::CommandWidget;
 use gio::ApplicationExt;
 use gio::ApplicationExtManual;
 use gtk::BoxExt;
@@ -92,13 +93,16 @@ pub struct Window {
     layout: gtk::Box,
     column_layout: gtk::Box,
     columns: Vec<Column>,
-    command: Rc<RefCell<command::Command>>,
+    command: Rc<RefCell<CommandWidget>>,
     active_pane_index: (usize, usize),
     buffers: Rc<RefCell<buffer::BufferMap>>,
 }
 
 impl Window {
-    fn new(app: &gtk::Application, buffers: Rc<RefCell<buffer::BufferMap>>) -> Rc<RefCell<Window>> {
+    fn new(
+        app: &gtk::Application,
+        buffers: Rc<RefCell<buffer::BufferMap>>,
+    ) -> Rc<RefCell<Window>> {
         let window = gtk::ApplicationWindow::new(app);
         window.set_default_size(1024, 768);
         window.set_title("emma");
@@ -117,7 +121,7 @@ impl Window {
             /*spacing=*/ 0,
         );
 
-        let command = command::Command::new();
+        let command = CommandWidget::new();
 
         let expand = true;
         let fill = true;
@@ -164,12 +168,12 @@ impl Window {
         } else if key.get_keyval() == 'b' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            command::Command::choose_buffer(w.clone(), w.borrow().command.clone());
+            CommandWidget::choose_buffer(w.clone(), w.borrow().command.clone());
             Inhibit(true)
         } else if key.get_keyval() == 'o' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            command::Command::find_file(w.clone(), w.borrow().command.clone());
+            CommandWidget::find_file(w.clone(), w.borrow().command.clone());
             Inhibit(true)
         } else {
             Inhibit(false)

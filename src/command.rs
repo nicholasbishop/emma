@@ -11,17 +11,17 @@ use std::{cell::RefCell, path::PathBuf, rc::Rc};
 // command. Once we add a second command this might become a trait or
 // something.
 
-pub struct Command {
+pub struct CommandWidget {
     editor: gtk::TextView,
     window: Option<Rc<RefCell<Window>>>,
 }
 
-impl Command {
-    pub fn new() -> Rc<RefCell<Command>> {
+impl CommandWidget {
+    pub fn new() -> Rc<RefCell<CommandWidget>> {
         let editor = gtk::TextView::new();
         editor.set_monospace(true);
 
-        let r = Rc::new(RefCell::new(Command {
+        let r = Rc::new(RefCell::new(CommandWidget {
             editor,
             window: None,
         }));
@@ -64,7 +64,7 @@ impl Command {
         );
     }
 
-    pub fn find_file(w: Rc<RefCell<Window>>, c: Rc<RefCell<Command>>) {
+    pub fn find_file(w: Rc<RefCell<Window>>, c: Rc<RefCell<CommandWidget>>) {
         c.borrow_mut().window = Some(w);
         c.borrow().editor.grab_focus();
         c.borrow().set_prompt("Find file: ");
@@ -83,7 +83,10 @@ impl Command {
         );
     }
 
-    pub fn choose_buffer(w: Rc<RefCell<Window>>, c: Rc<RefCell<Command>>) {
+    pub fn choose_buffer(
+        w: Rc<RefCell<Window>>,
+        c: Rc<RefCell<CommandWidget>>,
+    ) {
         c.borrow_mut().window = Some(w);
         c.borrow().editor.grab_focus();
         c.borrow().set_prompt("Choose buffer: ");
@@ -103,7 +106,10 @@ impl Command {
         Some(PathBuf::from(path.as_str()))
     }
 
-    fn on_key_press(c: Rc<RefCell<Command>>, key: &gdk::EventKey) -> Inhibit {
+    fn on_key_press(
+        c: Rc<RefCell<CommandWidget>>,
+        key: &gdk::EventKey,
+    ) -> Inhibit {
         if key.get_keyval() == gdk::enums::key::Return {
             let path = c.borrow().get_current_path().unwrap();
             c.borrow()
@@ -119,5 +125,5 @@ impl Command {
         }
     }
 
-    fn on_command_changed(_c: Rc<RefCell<Command>>) {}
+    fn on_command_changed(_c: Rc<RefCell<CommandWidget>>) {}
 }

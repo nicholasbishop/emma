@@ -37,30 +37,37 @@ fn open_db() -> Result<rusqlite::Connection, Error> {
 
 pub fn init_db() -> Result<(), Error> {
     let conn = open_db()?;
-    conn.execute("CREATE TABLE IF NOT EXISTS open_buffers (
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS open_buffers (
                       buffer_id TEXT PRIMARY KEY,
                       path TEXT,
-                      kind TEXT)", rusqlite::NO_PARAMS)?;
+                      kind TEXT)",
+        rusqlite::NO_PARAMS,
+    )?;
     Ok(())
 }
 
 pub fn load_buffer_list() -> Result<BufferMap, Error> {
     let conn = open_db()?;
-    let mut stmt = conn.prepare("SELECT buffer_id, path, kind FROM open_buffers")?;
-    
+    let mut stmt =
+        conn.prepare("SELECT buffer_id, path, kind FROM open_buffers")?;
+
     let open_buffers = stmt
         .query_and_then(rusqlite::NO_PARAMS, |b| {
             let id: String = b.get(0)?;
             let path: String = b.get(1)?;
             let kind: String = b.get(2)?;
             let id = BufferId::from_str(&id).unwrap();
-            Ok((id.clone(), Buffer {
-                id,
-                path: PathBuf::from(path),
-                kind: BufferKind::from_str(&kind)
-                    .ok_or(Error::InvalidBufferKind)?,
-                text: None,
-            }))
+            Ok((
+                id.clone(),
+                Buffer {
+                    id,
+                    path: PathBuf::from(path),
+                    kind: BufferKind::from_str(&kind)
+                        .ok_or(Error::InvalidBufferKind)?,
+                    text: None,
+                },
+            ))
         })?
         .collect::<Result<BufferMap, Error>>()?;
     Ok(open_buffers)
@@ -68,10 +75,14 @@ pub fn load_buffer_list() -> Result<BufferMap, Error> {
 
 pub fn add_buffer(buffer: &Buffer) -> Result<(), Error> {
     let conn = open_db()?;
-    conn.execute("INSERT INTO open_buffers (buffer_id, path, kind)
+    conn.execute(
+        "INSERT INTO open_buffers (buffer_id, path, kind)
                   VALUES (?1, ?2, ?3)",
-                 &[buffer.id.to_string().as_str(),
-                   buffer.path.to_str().unwrap(),
-                   buffer.kind.to_str()])?;
+        &[
+            buffer.id.to_string().as_str(),
+            buffer.path.to_str().unwrap(),
+            buffer.kind.to_str(),
+        ],
+    )?;
     Ok(())
 }

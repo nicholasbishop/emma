@@ -1,7 +1,11 @@
 use gtk::TextBufferExt;
-use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
-use std::{collections::HashMap, fs, path::{Path, PathBuf}};
+use rand::{thread_rng, Rng};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug)]
 pub enum BufferKind {
@@ -77,7 +81,7 @@ impl Buffer {
             id: BufferId::random(),
             path: path.to_path_buf(),
             kind: BufferKind::File,
-            text: Some(text)
+            text: Some(text),
         }
     }
 }
