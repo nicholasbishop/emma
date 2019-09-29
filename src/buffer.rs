@@ -3,8 +3,7 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use std::{
     collections::HashMap,
-    fmt,
-    fs,
+    fmt, fs,
     path::{Path, PathBuf},
 };
 
@@ -95,7 +94,10 @@ impl Buffer {
 
 pub type BufferMap = HashMap<BufferId, Buffer>;
 
-pub fn buffer_from_name<'a>(map: &'a BufferMap, name: &str) -> Option<&'a Buffer> {
+pub fn buffer_from_name<'a>(
+    map: &'a BufferMap,
+    name: &str,
+) -> Option<&'a Buffer> {
     map.values().find(|b| {
         if let Some(file_name) = b.path.file_name() {
             file_name.to_str() == Some(name)

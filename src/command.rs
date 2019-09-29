@@ -1,4 +1,7 @@
-use crate::{buffer::{BufferMap, buffer_from_name}, Window};
+use crate::{
+    buffer::{buffer_from_name, BufferMap},
+    Window,
+};
 use gtk::Inhibit;
 use gtk::TextBufferExt;
 use gtk::TextTagExt;
@@ -100,7 +103,7 @@ impl CommandWidget {
         c.borrow_mut().command = Command::ChooseBuffer;
         c.borrow().editor.grab_focus();
         c.borrow().set_prompt("Choose buffer: ");
-        
+
         let left_gravity = false;
         let buffer = c.borrow().editor.get_buffer().unwrap();
         buffer.create_mark(
@@ -135,11 +138,7 @@ impl CommandWidget {
 
     fn end_find_file(&self) {
         let path = PathBuf::from(self.get_input_text().unwrap());
-        self.window
-            .as_ref()
-            .unwrap()
-            .borrow()
-            .open_file(&path);
+        self.window.as_ref().unwrap().borrow().open_file(&path);
         self.clear();
     }
 
@@ -150,7 +149,9 @@ impl CommandWidget {
         if key.get_keyval() == gdk::enums::key::Return {
             match c.borrow().command {
                 Command::None => {}
-                Command::ChooseBuffer => {c.borrow().end_choose_buffer();}
+                Command::ChooseBuffer => {
+                    c.borrow().end_choose_buffer();
+                }
                 Command::FindFile => c.borrow().end_find_file(),
             }
             Inhibit(true)

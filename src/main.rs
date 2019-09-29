@@ -168,8 +168,11 @@ impl Window {
         } else if key.get_keyval() == 'b' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            CommandWidget::choose_buffer(w.clone(), w.borrow().command.clone(),
-                                         w.borrow().buffers.clone());
+            CommandWidget::choose_buffer(
+                w.clone(),
+                w.borrow().command.clone(),
+                w.borrow().buffers.clone(),
+            );
             Inhibit(true)
         } else if key.get_keyval() == 'o' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
