@@ -130,9 +130,13 @@ impl CommandWidget {
     fn end_choose_buffer(&self) -> Option<()> {
         let buf_name = self.get_input_text()?;
         self.clear();
-        let buffers = &self.buffers.as_ref()?.borrow();
-        let buf = buffer_from_name(buffers, &buf_name);
-        self.window.as_ref()?.borrow().show_buffer(&buf?.id);
+        let buf_id;
+        {
+            let buffers = &self.buffers.as_ref()?.borrow();
+            let buf = buffer_from_name(buffers, &buf_name);
+            buf_id = buf?.id.clone();
+        }
+        self.window.as_ref()?.borrow().show_buffer(&buf_id);
         Some(())
     }
 

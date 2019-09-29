@@ -77,6 +77,25 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    pub fn load(&mut self) {
+        if self.text.is_some() {
+            return;
+        }
+
+        match self.kind {
+            BufferKind::File => {
+                let file = fs::read_to_string(&self.path).unwrap();
+                let tags: Option<&gtk::TextTagTable> = None;
+                let text = gtk::TextBuffer::new(tags);
+                text.set_text(&file);
+                self.text = Some(text);
+            }
+            BufferKind::Shell => {
+                dbg!("TODO");
+            }
+        }
+    }
+
     pub fn open_file(path: &Path) -> Buffer {
         let file = fs::read_to_string(path).unwrap();
         let tags: Option<&gtk::TextTagTable> = None;

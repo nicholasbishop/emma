@@ -201,8 +201,8 @@ impl Window {
     }
 
     pub fn show_buffer(&self, buffer_id: &buffer::BufferId) {
-        dbg!(&buffer_id);
-        if let Some(buf) = self.buffers.borrow().get(buffer_id) {
+        if let Some(buf) = self.buffers.borrow_mut().get_mut(buffer_id) {
+            buf.load();
             if let Some(text) = &buf.text {
                 self.get_active_pane().editor.set_buffer(Some(text));
             }
