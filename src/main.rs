@@ -168,7 +168,8 @@ impl Window {
         } else if key.get_keyval() == 'b' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            CommandWidget::choose_buffer(w.clone(), w.borrow().command.clone());
+            CommandWidget::choose_buffer(w.clone(), w.borrow().command.clone(),
+                                         w.borrow().buffers.clone());
             Inhibit(true)
         } else if key.get_keyval() == 'o' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
@@ -194,6 +195,15 @@ impl Window {
 
     fn get_active_pane(&self) -> &Pane {
         &self.columns[self.active_pane_index.0].panes[self.active_pane_index.1]
+    }
+
+    pub fn show_buffer(&self, buffer_id: &buffer::BufferId) {
+        dbg!(&buffer_id);
+        if let Some(buf) = self.buffers.borrow().get(buffer_id) {
+            if let Some(text) = &buf.text {
+                self.get_active_pane().editor.set_buffer(Some(text));
+            }
+        }
     }
 
     pub fn open_file(&self, path: &Path) {

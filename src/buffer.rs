@@ -3,6 +3,7 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use std::{
     collections::HashMap,
+    fmt,
     fs,
     path::{Path, PathBuf},
 };
@@ -32,8 +33,14 @@ impl BufferKind {
 
 const BUFFER_ID_LEN: usize = 16;
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub struct BufferId([u8; BUFFER_ID_LEN]);
+
+impl fmt::Debug for BufferId {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(fmt, "BufferId({})", self.to_string())
+    }
+}
 
 impl BufferId {
     pub fn random() -> BufferId {
@@ -87,3 +94,13 @@ impl Buffer {
 }
 
 pub type BufferMap = HashMap<BufferId, Buffer>;
+
+pub fn buffer_from_name<'a>(map: &'a BufferMap, name: &str) -> Option<&'a Buffer> {
+    map.values().find(|b| {
+        if let Some(file_name) = b.path.file_name() {
+            file_name.to_str() == Some(name)
+        } else {
+            false
+        }
+    })
+}

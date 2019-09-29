@@ -1,4 +1,4 @@
-use crate::Window;
+use crate::{buffer::{BufferMap, buffer_from_name}, Window};
 use gtk::Inhibit;
 use gtk::TextBufferExt;
 use gtk::TextTagExt;
@@ -7,13 +7,17 @@ use gtk::TextViewExt;
 use gtk::WidgetExt;
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
-// TODO(nicholasbishop): for now this just implements the "find file"
-// command. Once we add a second command this might become a trait or
-// something.
+enum Command {
+    None,
+    ChooseBuffer,
+    FindFile,
+}
 
 pub struct CommandWidget {
     editor: gtk::TextView,
     window: Option<Rc<RefCell<Window>>>,
+    buffers: Option<Rc<RefCell<BufferMap>>>,
+    command: Command,
 }
 
 impl CommandWidget {
@@ -24,6 +28,8 @@ impl CommandWidget {
         let r = Rc::new(RefCell::new(CommandWidget {
             editor,
             window: None,
+            command: Command::None,
+            buffers: None,
         }));
 
         let r2 = r.clone();
@@ -62,22 +68,23 @@ impl CommandWidget {
             &buffer.get_start_iter(),
             &buffer.get_end_iter(),
         );
+        let left_gravity = true;
+        buffer.create_mark(
+            Some("input-start"),
+            &buffer.get_end_iter(),
+            left_gravity,
+        );
     }
 
     pub fn find_file(w: Rc<RefCell<Window>>, c: Rc<RefCell<CommandWidget>>) {
         c.borrow_mut().window = Some(w);
+        c.borrow_mut().command = Command::FindFile;
         c.borrow().editor.grab_focus();
         c.borrow().set_prompt("Find file: ");
         let buffer = c.borrow().editor.get_buffer().unwrap();
-        let left_gravity = true;
-        buffer.create_mark(
-            Some("path-start"),
-            &buffer.get_end_iter(),
-            left_gravity,
-        );
         let left_gravity = false;
         buffer.create_mark(
-            Some("path-end"),
+            Some("input-end"),
             &buffer.get_end_iter(),
             left_gravity,
         );
@@ -86,10 +93,21 @@ impl CommandWidget {
     pub fn choose_buffer(
         w: Rc<RefCell<Window>>,
         c: Rc<RefCell<CommandWidget>>,
+        buffers: Rc<RefCell<BufferMap>>,
     ) {
         c.borrow_mut().window = Some(w);
+        c.borrow_mut().buffers = Some(buffers);
+        c.borrow_mut().command = Command::ChooseBuffer;
         c.borrow().editor.grab_focus();
         c.borrow().set_prompt("Choose buffer: ");
+        
+        let left_gravity = false;
+        let buffer = c.borrow().editor.get_buffer().unwrap();
+        buffer.create_mark(
+            Some("input-end"),
+            &buffer.get_end_iter(),
+            left_gravity,
+        );
     }
 
     fn clear(&self) {
@@ -97,13 +115,32 @@ impl CommandWidget {
         buffer.set_text("");
     }
 
-    fn get_current_path(&self) -> Option<PathBuf> {
+    fn get_input_text(&self) -> Option<String> {
         let buffer = self.editor.get_buffer()?;
-        let start = buffer.get_iter_at_mark(&buffer.get_mark("path-start")?);
-        let end = buffer.get_iter_at_mark(&buffer.get_mark("path-end")?);
+        let start = buffer.get_iter_at_mark(&buffer.get_mark("input-start")?);
+        let end = buffer.get_iter_at_mark(&buffer.get_mark("input-end")?);
         let include_hidden_chars = false;
         let path = buffer.get_slice(&start, &end, include_hidden_chars)?;
-        Some(PathBuf::from(path.as_str()))
+        Some(path.to_string())
+    }
+
+    fn end_choose_buffer(&self) -> Option<()> {
+        let buf_name = self.get_input_text()?;
+        self.clear();
+        let buffers = &self.buffers.as_ref()?.borrow();
+        let buf = buffer_from_name(buffers, &buf_name);
+        self.window.as_ref()?.borrow().show_buffer(&buf?.id);
+        Some(())
+    }
+
+    fn end_find_file(&self) {
+        let path = PathBuf::from(self.get_input_text().unwrap());
+        self.window
+            .as_ref()
+            .unwrap()
+            .borrow()
+            .open_file(&path);
+        self.clear();
     }
 
     fn on_key_press(
@@ -111,14 +148,11 @@ impl CommandWidget {
         key: &gdk::EventKey,
     ) -> Inhibit {
         if key.get_keyval() == gdk::enums::key::Return {
-            let path = c.borrow().get_current_path().unwrap();
-            c.borrow()
-                .window
-                .as_ref()
-                .unwrap()
-                .borrow()
-                .open_file(&path);
-            c.borrow().clear();
+            match c.borrow().command {
+                Command::None => {}
+                Command::ChooseBuffer => {c.borrow().end_choose_buffer();}
+                Command::FindFile => c.borrow().end_find_file(),
+            }
             Inhibit(true)
         } else {
             Inhibit(false)
