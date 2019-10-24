@@ -3,16 +3,16 @@ mod command;
 mod persistence;
 
 use command::CommandWidget;
-use gio::ApplicationExt;
-use gio::ApplicationExtManual;
 use gtk::BoxExt;
 use gtk::ContainerExt;
-use gtk::CssProviderExt;
 use gtk::GtkWindowExt;
 use gtk::Inhibit;
 use gtk::TextViewExt;
 use gtk::WidgetExt;
-use std::{cell::RefCell, env, path::Path, rc::Rc};
+use std::{cell::RefCell, path::Path, rc::Rc};
+use gio::{ApplicationExt, ApplicationExtManual};
+use gtk::CssProviderExt;
+use std::env;
 
 struct Pane {
     layout: gtk::Box,
@@ -95,13 +95,11 @@ pub struct Window {
     columns: Vec<Column>,
     command: Rc<RefCell<CommandWidget>>,
     active_pane_index: (usize, usize),
-    buffers: Rc<RefCell<buffer::BufferMap>>,
 }
 
 impl Window {
     fn new(
         app: &gtk::Application,
-        buffers: Rc<RefCell<buffer::BufferMap>>,
     ) -> Rc<RefCell<Window>> {
         let window = gtk::ApplicationWindow::new(app);
         window.set_default_size(1024, 768);
@@ -138,7 +136,6 @@ impl Window {
             columns: vec![column],
             command,
             active_pane_index: (0, 0),
-            buffers,
         }));
 
         let r2 = r.clone();
@@ -168,11 +165,12 @@ impl Window {
         } else if key.get_keyval() == 'b' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            CommandWidget::choose_buffer(
-                w.clone(),
-                w.borrow().command.clone(),
-                w.borrow().buffers.clone(),
-            );
+            // TODO
+            // CommandWidget::choose_buffer(
+            //     w.clone(),
+            //     w.borrow().command.clone(),
+            //     w.borrow().buffers.clone(),
+            // );
             Inhibit(true)
         } else if key.get_keyval() == 'o' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
@@ -201,25 +199,58 @@ impl Window {
     }
 
     pub fn show_buffer(&self, buffer_id: &buffer::BufferId) {
-        if let Some(buf) = self.buffers.borrow_mut().get_mut(buffer_id) {
-            buf.load();
-            if let Some(text) = &buf.text {
-                self.get_active_pane().editor.set_buffer(Some(text));
-            }
-        }
+        // TODO
+        // if let Some(buf) = self.buffers.borrow_mut().get_mut(buffer_id) {
+        //     buf.load();
+        //     if let Some(text) = &buf.text {
+        //         self.get_active_pane().editor.set_buffer(Some(text));
+        //     }
+        // }
     }
 
     pub fn open_file(&self, path: &Path) {
-        let buf = buffer::Buffer::open_file(path);
-        persistence::add_buffer(&buf).unwrap();
-        let id = buf.id.clone();
-        self.buffers.borrow_mut().insert(id.clone(), buf);
-        if let Some(buf) = self.buffers.borrow().get(&id) {
-            if let Some(text) = &buf.text {
-                self.get_active_pane().editor.set_buffer(Some(text));
-            }
-        }
+        // TODO
+        // let buf = buffer::Buffer::open_file(path);
+        // persistence::add_buffer(&buf).unwrap();
+        // let id = buf.id.clone();
+        // self.buffers.borrow_mut().insert(id.clone(), buf);
+        // if let Some(buf) = self.buffers.borrow().get(&id) {
+        //     if let Some(text) = &buf.text {
+        //         self.get_active_pane().editor.set_buffer(Some(text));
+        //     }
+        // }
     }
+}
+
+enum Event {
+    AppActivated(gtk::Application),
+}
+
+pub struct State {
+    //app: gtk::Application,
+    buffers: buffer::BufferMap,
+    //tx_events: glib::Sender<Event>,
+}
+
+fn on_app_activated(app: &gtk::Application, state: &State) {
+    let css = gtk::CssProvider::new();
+    css.load_from_data(include_bytes!("theme.css")).unwrap();
+
+    gtk::StyleContext::add_provider_for_screen(
+        &gdk::Screen::get_default().unwrap(),
+        &css,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+
+    // let window = gtk::ApplicationWindow::new(app);
+    // window.show();
+    let window = Window::new(app);
+
+    // if let Ok(b) = persistence::load_buffer_list() {
+    //     buffers.replace(b);
+    // }
+
+    window.borrow().show();
 }
 
 fn main() {
@@ -229,25 +260,22 @@ fn main() {
         gio::ApplicationFlags::FLAGS_NONE,
     )
     .expect("Application::new failed");
-    app.connect_activate(|app| {
-        let buffers = Rc::new(RefCell::new(buffer::BufferMap::new()));
+    app.clone().connect_activate(move |app| {
+        let state = State {
+            buffers: buffer::BufferMap::new(),
+        };
+        let (tx_events, rx_events) = glib::MainContext::channel::<Event>(glib::PRIORITY_DEFAULT);
+        on_app_activated(app, &state);
 
-        let css = gtk::CssProvider::new();
-        css.load_from_data(include_bytes!("theme.css")).unwrap();
+        rx_events.attach(None, move |event| {
+            match event {
+                Event::AppActivated(app) => {
+                    //on_app_activated(&app, &state);
+                }
+            }
 
-        gtk::StyleContext::add_provider_for_screen(
-            &gdk::Screen::get_default().unwrap(),
-            &css,
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );
-
-        let window = Window::new(app, buffers.clone());
-
-        if let Ok(b) = persistence::load_buffer_list() {
-            buffers.replace(b);
-        }
-
-        window.borrow().show();
+            glib::Continue(true)
+        });
     });
     app.run(&env::args().collect::<Vec<_>>());
 }
