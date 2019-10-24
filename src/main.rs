@@ -12,7 +12,7 @@ use gtk::WidgetExt;
 use std::{cell::RefCell, path::Path, rc::Rc};
 use gio::{ApplicationExt, ApplicationExtManual};
 use gtk::CssProviderExt;
-use std::env;
+use std::{collections::HashMap, env};
 
 struct Pane {
     layout: gtk::Box,
@@ -100,7 +100,9 @@ pub struct Window {
 impl Window {
     fn new(
         app: &gtk::Application,
-    ) -> Rc<RefCell<Window>> {
+        state: &State,
+        window_id: WindowId,
+    ) -> Window {
         let window = gtk::ApplicationWindow::new(app);
         window.set_default_size(1024, 768);
         window.set_title("emma");
@@ -129,18 +131,20 @@ impl Window {
         vbox.pack_start(command.borrow().widget(), expand, fill, spacing);
         window.add(&vbox);
 
-        let r = Rc::new(RefCell::new(Window {
+        let r = Window {
             window,
             layout: vbox,
             column_layout: hbox,
             columns: vec![column],
             command,
             active_pane_index: (0, 0),
-        }));
+        };
 
-        let r2 = r.clone();
-        r.borrow().window.connect_key_press_event(move |_, key| {
-            Self::on_key_press(r2.clone(), key)
+        // TODO
+        // let r2 = r.clone();
+        let tx_events = state.tx_events.clone();
+        r.window.connect_key_press_event(move |_, key| {
+            Self::on_key_press(&tx_events, key, window_id)
         });
 
         r
@@ -150,17 +154,17 @@ impl Window {
         self.window.show_all();
     }
 
-    fn on_key_press(w: Rc<RefCell<Window>>, key: &gdk::EventKey) -> Inhibit {
+    fn on_key_press(tx_events: &TxEvents, key: &gdk::EventKey,
+                    window_id: WindowId) -> Inhibit {
         if key.get_keyval() == '3' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            w.borrow_mut().add_column();
+            tx_events.send(Event::AddColumn(window_id));
             Inhibit(true)
         } else if key.get_keyval() == '4' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            // TODO
-            w.borrow_mut().columns[0].add_row();
+            tx_events.send(Event::AddRow(window_id));
             Inhibit(true)
         } else if key.get_keyval() == 'b' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
@@ -175,7 +179,7 @@ impl Window {
         } else if key.get_keyval() == 'o' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            CommandWidget::find_file(w.clone(), w.borrow().command.clone());
+            // CommandWidget::find_file(w.clone(), w.borrow().command.clone());
             Inhibit(true)
         } else {
             Inhibit(false)
@@ -223,16 +227,22 @@ impl Window {
 }
 
 enum Event {
-    AppActivated(gtk::Application),
+    AddColumn(WindowId),
+    AddRow(WindowId),
 }
+
+type TxEvents = glib::Sender<Event>;
+
+type WindowId = usize;
 
 pub struct State {
-    //app: gtk::Application,
+    windows: HashMap<WindowId, Window>,
+    next_window_id: WindowId,
     buffers: buffer::BufferMap,
-    //tx_events: glib::Sender<Event>,
+    tx_events: TxEvents,
 }
 
-fn on_app_activated(app: &gtk::Application, state: &State) {
+fn on_app_activated(app: &gtk::Application, state: &mut State) {
     let css = gtk::CssProvider::new();
     css.load_from_data(include_bytes!("theme.css")).unwrap();
 
@@ -242,15 +252,18 @@ fn on_app_activated(app: &gtk::Application, state: &State) {
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 
-    // let window = gtk::ApplicationWindow::new(app);
-    // window.show();
-    let window = Window::new(app);
+    let window_id = state.next_window_id;
+    state.next_window_id += 1;
+
+    let window = Window::new(app, &state, window_id);
 
     // if let Ok(b) = persistence::load_buffer_list() {
     //     buffers.replace(b);
     // }
 
-    window.borrow().show();
+    window.show();
+
+    state.windows.insert(window_id, window);
 }
 
 fn main() {
@@ -261,16 +274,27 @@ fn main() {
     )
     .expect("Application::new failed");
     app.clone().connect_activate(move |app| {
-        let state = State {
-            buffers: buffer::BufferMap::new(),
-        };
         let (tx_events, rx_events) = glib::MainContext::channel::<Event>(glib::PRIORITY_DEFAULT);
-        on_app_activated(app, &state);
+        let mut state = State {
+            windows: HashMap::new(),
+            next_window_id: 0,
+            buffers: buffer::BufferMap::new(),
+            tx_events,
+        };
+        on_app_activated(app, &mut state);
 
         rx_events.attach(None, move |event| {
             match event {
-                Event::AppActivated(app) => {
-                    //on_app_activated(&app, &state);
+                Event::AddColumn(window_id) => {
+                    if let Some(window) = state.windows.get_mut(&window_id) {
+                        window.add_column();
+                    }
+                }
+                Event::AddRow(window_id) => {
+                    if let Some(window) = state.windows.get_mut(&window_id) {
+                        // TODO
+                        window.columns[0].add_row();
+                    }
                 }
             }
 
