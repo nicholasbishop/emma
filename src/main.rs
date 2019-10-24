@@ -266,6 +266,22 @@ fn on_app_activated(app: &gtk::Application, state: &mut State) {
     state.windows.insert(window_id, window);
 }
 
+fn handle_event(event: Event, state: &mut State) {
+    match event {
+        Event::AddColumn(window_id) => {
+            if let Some(window) = state.windows.get_mut(&window_id) {
+                window.add_column();
+            }
+        }
+        Event::AddRow(window_id) => {
+            if let Some(window) = state.windows.get_mut(&window_id) {
+                // TODO
+                window.columns[0].add_row();
+            }
+        }
+    }
+}
+
 fn main() {
     persistence::init_db().unwrap();
     let app = gtk::Application::new(
@@ -284,19 +300,7 @@ fn main() {
         on_app_activated(app, &mut state);
 
         rx_events.attach(None, move |event| {
-            match event {
-                Event::AddColumn(window_id) => {
-                    if let Some(window) = state.windows.get_mut(&window_id) {
-                        window.add_column();
-                    }
-                }
-                Event::AddRow(window_id) => {
-                    if let Some(window) = state.windows.get_mut(&window_id) {
-                        // TODO
-                        window.columns[0].add_row();
-                    }
-                }
-            }
+            handle_event(event, &mut state);
 
             glib::Continue(true)
         });
