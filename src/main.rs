@@ -11,8 +11,7 @@ use gtk::GtkWindowExt;
 use gtk::Inhibit;
 use gtk::TextViewExt;
 use gtk::WidgetExt;
-use std::{cell::RefCell, path::Path, rc::Rc};
-use std::{collections::HashMap, env};
+use std::{path::Path, collections::HashMap, env};
 
 struct Pane {
     layout: gtk::Box,
@@ -93,7 +92,7 @@ pub struct Window {
     layout: gtk::Box,
     column_layout: gtk::Box,
     columns: Vec<Column>,
-    command: Rc<RefCell<CommandWidget>>,
+    command: CommandWidget,
     active_pane_index: (usize, usize),
 }
 
@@ -121,14 +120,14 @@ impl Window {
             /*spacing=*/ 0,
         );
 
-        let command = CommandWidget::new();
+        let command = CommandWidget::new(state.tx_events.clone());
 
         let expand = true;
         let fill = true;
         let spacing = 0;
         vbox.pack_start(&hbox, expand, fill, spacing);
         let expand = false;
-        vbox.pack_start(command.borrow().widget(), expand, fill, spacing);
+        vbox.pack_start(command.widget(), expand, fill, spacing);
         window.add(&vbox);
 
         let r = Window {
@@ -162,12 +161,12 @@ impl Window {
         if key.get_keyval() == '3' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            tx_events.send(Event::AddColumn(window_id));
+            tx_events.send(Event::AddColumn(window_id)).unwrap();
             Inhibit(true)
         } else if key.get_keyval() == '4' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
-            tx_events.send(Event::AddRow(window_id));
+            tx_events.send(Event::AddRow(window_id)).unwrap();
             Inhibit(true)
         } else if key.get_keyval() == 'b' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
@@ -229,12 +228,12 @@ impl Window {
     }
 }
 
-enum Event {
+pub enum Event {
     AddColumn(WindowId),
     AddRow(WindowId),
 }
 
-type TxEvents = glib::Sender<Event>;
+pub type TxEvents = glib::Sender<Event>;
 
 type WindowId = usize;
 
