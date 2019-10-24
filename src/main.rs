@@ -3,15 +3,15 @@ mod command;
 mod persistence;
 
 use command::CommandWidget;
+use gio::{ApplicationExt, ApplicationExtManual};
 use gtk::BoxExt;
 use gtk::ContainerExt;
+use gtk::CssProviderExt;
 use gtk::GtkWindowExt;
 use gtk::Inhibit;
 use gtk::TextViewExt;
 use gtk::WidgetExt;
 use std::{cell::RefCell, path::Path, rc::Rc};
-use gio::{ApplicationExt, ApplicationExtManual};
-use gtk::CssProviderExt;
 use std::{collections::HashMap, env};
 
 struct Pane {
@@ -154,8 +154,11 @@ impl Window {
         self.window.show_all();
     }
 
-    fn on_key_press(tx_events: &TxEvents, key: &gdk::EventKey,
-                    window_id: WindowId) -> Inhibit {
+    fn on_key_press(
+        tx_events: &TxEvents,
+        key: &gdk::EventKey,
+        window_id: WindowId,
+    ) -> Inhibit {
         if key.get_keyval() == '3' as u32
             && key.get_state() == gdk::ModifierType::CONTROL_MASK
         {
@@ -290,7 +293,8 @@ fn main() {
     )
     .expect("Application::new failed");
     app.clone().connect_activate(move |app| {
-        let (tx_events, rx_events) = glib::MainContext::channel::<Event>(glib::PRIORITY_DEFAULT);
+        let (tx_events, rx_events) =
+            glib::MainContext::channel::<Event>(glib::PRIORITY_DEFAULT);
         let mut state = State {
             windows: HashMap::new(),
             next_window_id: 0,
